@@ -1,132 +1,128 @@
 <?php
 
-namespace Drupal\Tests\advancedqueue\Functional;
+namespace Drupal\Tests\commerce_recurring\Functional;
 
-use Drupal\advancedqueue\Entity\Queue;
-use Drupal\advancedqueue\Entity\QueueInterface;
-use Drupal\Tests\BrowserTestBase;
+use Drupal\commerce_recurring\Entity\BillingSchedule;
+use Drupal\commerce_recurring\Entity\BillingScheduleInterface;
+use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
 
 /**
- * Tests the queue UI.
+ * Tests the billing schedule UI.
  *
- * @group advancedqueue
+ * @group commerce_recurring
  */
-class QueueTest extends BrowserTestBase {
-
-  /**
-   * A test user with administrative privileges.
-   *
-   * @var \Drupal\user\UserInterface
-   */
-  protected $adminUser;
+class BillingScheduleTest extends CommerceBrowserTestBase {
 
   /**
    * {@inheritdoc}
    */
   public static $modules = [
-    'advancedqueue',
-    'block',
-    'views',
-    'system',
+    'commerce_product',
+    'commerce_recurring',
   ];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
-    parent::setUp();
-
-    $this->placeBlock('local_tasks_block');
-    $this->placeBlock('local_actions_block');
-    $this->placeBlock('page_title_block');
-
-    $this->adminUser = $this->drupalCreateUser(['administer advancedqueue']);
-    $this->drupalLogin($this->adminUser);
+  protected function getAdministratorPermissions() {
+    return [
+      'administer commerce_billing_schedule',
+    ] + parent::getAdministratorPermissions();
   }
 
   /**
-   * Tests creating a queue.
+   * Tests creating a billing schedule.
    */
-  public function testQueueCreation() {
-    $this->drupalGet('admin/config/system/queues');
-    $this->getSession()->getPage()->clickLink('Add queue');
-    $this->assertSession()->addressEquals('admin/config/system/queues/add');
+  public function testBillingScheduleCreation() {
+    $this->drupalGet('admin/commerce/config/billing-schedule');
+    $this->getSession()->getPage()->clickLink('Add billing schedule');
+    $this->assertSession()->addressEquals('admin/commerce/config/billing-schedule/add');
 
     $values = [
       'label' => 'Test',
-      'configuration[database][lease_time]' => '200',
-      'processor' => QueueInterface::PROCESSOR_DAEMON,
-      'processing_time' => '100',
+      'displayLabel' => 'Awesome test',
+      'billingType' => BillingScheduleInterface::BILLING_TYPE_POSTPAID,
+      'plugin' => 'fixed',
+      'configuration[fixed][number]' => '2',
+      'configuration[fixed][unit]' => 'month',
       // Setting the 'id' can fail if focus switches to another field.
       // This is a bug in the machine name JS that can be reproduced manually.
       'id' => 'test',
     ];
     $this->submitForm($values, 'Save');
-    $this->assertSession()->addressEquals('admin/config/system/queues');
+    $this->assertSession()->addressEquals('admin/commerce/config/billing-schedule');
     $this->assertSession()->responseContains('Test');
 
-    $queue = Queue::load('test');
-    $this->assertEquals('test', $queue->id());
-    $this->assertEquals('Test', $queue->label());
-    $this->assertEquals('database', $queue->getBackendId());
-    $this->assertEquals(['lease_time' => 200], $queue->getBackendConfiguration());
-    $this->assertEquals($queue->getBackendConfiguration(), $queue->getBackend()->getConfiguration());
-    $this->assertEquals(QueueInterface::PROCESSOR_DAEMON, $queue->getProcessor());
-    $this->assertEquals(100, $queue->getProcessingTime());
-    $this->assertFalse($queue->isLocked());
+    $billing_schedule = BillingSchedule::load('test');
+    $this->assertEquals('test', $billing_schedule->id());
+    $this->assertEquals('Test', $billing_schedule->label());
+    $this->assertEquals('Awesome test', $billing_schedule->getDisplayLabel());
+    $this->assertEquals(BillingScheduleInterface::BILLING_TYPE_POSTPAID, $billing_schedule->getBillingType());
+    $this->assertEquals('fixed', $billing_schedule->getPluginId());
+    $this->assertEquals(['number' => '2', 'unit' => 'month'], $billing_schedule->getPluginConfiguration());
+    $this->assertEquals($billing_schedule->getPluginConfiguration(), $billing_schedule->getPlugin()->getConfiguration());
   }
 
   /**
-   * Tests editing a queue.
+   * Tests editing a billing schedule.
    */
-  public function testQueueEditing() {
-    $queue = Queue::create([
+  public function testBillingScheduleEditing() {
+    $billing_schedule = BillingSchedule::create([
       'id' => 'test',
       'label' => 'Test',
-      'backend' => 'database',
-      'processor' => QueueInterface::PROCESSOR_DAEMON,
-      'processing_time' => 100,
+      'displayLabel' => 'Awesome test',
+      'billingType' => BillingScheduleInterface::BILLING_TYPE_POSTPAID,
+      'plugin' => 'fixed',
+      'configuration' => [
+        'number' => '2',
+        'unit' => 'month',
+      ],
     ]);
-    $queue->save();
+    $billing_schedule->save();
 
-    $this->drupalGet('admin/config/system/queues/manage/' . $queue->id());
+    $this->drupalGet('admin/commerce/config/billing-schedule/manage/' . $billing_schedule->id());
     $this->submitForm([
       'label' => 'Test (Modified)',
-      'configuration[database][lease_time]' => '202',
-      'processor' => QueueInterface::PROCESSOR_CRON,
-      'processing_time' => '120',
+      'displayLabel' => 'Awesome test (Modified)',
+      'billingType' => BillingScheduleInterface::BILLING_TYPE_PREPAID,
+      'plugin' => 'fixed',
+      'configuration[fixed][number]' => '1',
+      'configuration[fixed][unit]' => 'year',
     ], 'Save');
 
-    \Drupal::entityTypeManager()->getStorage('advancedqueue_queue')->resetCache();
-    $queue = Queue::load('test');
-    $this->assertEquals('test', $queue->id());
-    $this->assertEquals('Test (Modified)', $queue->label());
-    $this->assertEquals('database', $queue->getBackendId());
-    $this->assertEquals(['lease_time' => 202], $queue->getBackendConfiguration());
-    $this->assertEquals($queue->getBackendConfiguration(), $queue->getBackend()->getConfiguration());
-    $this->assertEquals(QueueInterface::PROCESSOR_CRON, $queue->getProcessor());
-    $this->assertEquals(120, $queue->getProcessingTime());
-    $this->assertFalse($queue->isLocked());
+    \Drupal::entityTypeManager()->getStorage('commerce_billing_schedule')->resetCache();
+    $billing_schedule = BillingSchedule::load('test');
+    $this->assertEquals('test', $billing_schedule->id());
+    $this->assertEquals('Test (Modified)', $billing_schedule->label());
+    $this->assertEquals('Awesome test (Modified)', $billing_schedule->getDisplayLabel());
+    $this->assertEquals(BillingScheduleInterface::BILLING_TYPE_PREPAID, $billing_schedule->getBillingType());
+    $this->assertEquals('fixed', $billing_schedule->getPluginId());
+    $this->assertEquals(['number' => '1', 'unit' => 'year'], $billing_schedule->getPluginConfiguration());
+    $this->assertEquals($billing_schedule->getPluginConfiguration(), $billing_schedule->getPlugin()->getConfiguration());
   }
 
   /**
-   * Tests deleting a queue.
+   * Tests deleting a billing schedule.
    */
-  public function testQueueDeletion() {
-    $queue = Queue::create([
+  public function testBillingScheduleDeletion() {
+    $billing_schedule = BillingSchedule::create([
       'id' => 'test',
       'label' => 'Test',
-      'backend' => 'database',
-      'processor' => QueueInterface::PROCESSOR_DAEMON,
-      'processing_time' => 100,
+      'displayLabel' => 'Awesome test',
+      'billingType' => BillingScheduleInterface::BILLING_TYPE_POSTPAID,
+      'plugin' => 'fixed',
+      'configuration' => [
+        'number' => '2',
+        'unit' => 'month',
+      ],
     ]);
-    $queue->save();
-    $this->drupalGet('admin/config/system/queues/manage/' . $queue->id() . '/delete');
+    $billing_schedule->save();
+    $this->drupalGet('admin/commerce/config/billing-schedule/manage/' . $billing_schedule->id() . '/delete');
     $this->submitForm([], 'Delete');
-    $this->assertSession()->addressEquals('admin/config/system/queues');
+    $this->assertSession()->addressEquals('admin/commerce/config/billing-schedule');
 
-    $queue_exists = (bool) Queue::load('test');
-    $this->assertEmpty($queue_exists, 'The queue has been deleted from the database.');
+    $billing_schedule_exists = (bool) BillingSchedule::load('test');
+    $this->assertEmpty($billing_schedule_exists);
   }
 
 }
