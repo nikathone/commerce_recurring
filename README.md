@@ -39,3 +39,13 @@ On the add to cart form, the customer chooses a plan and a billing schedule (hid
 If the billing schedule dictates "postpayment" as the billing type, the initial unit price of the order item is 0.The customer provides their billing information and completes checkout. When the order is placed, a subscription is open for each order item with a specified billing_schedule. As soon as the subscription is activated, the billing schedule generates a billing period, and opens a recurring order for that billing period.
 
 Once the billing period ends ($order->billing_period->end_date < time()), the module's hook_cron() implementation queues the order for closing and renewal. The queue worker then processes each order, collecting payment (via $subscription->payment_method), and opening the next recurring order.
+
+## Setup
+
+1) Go to /admin/commerce/config/billing-schedule/ and create a billing schedule.
+2) Edit your product variation type and enable the "Allow subscriptions" trait.
+3) Create a product variation with a "Subscription type" and a "Billing schedule" selected.
+
+That's it! Each time your product variation is purchased, a subscription will be created for it.
+By default, subscriptions are renewed on cron. This can be changed to a Drush/Drupal Console
+daemon by editing the queue at /admin/config/system/queues/manage/commerce_recurring.
