@@ -28,12 +28,17 @@ abstract class IntervalBase extends BillingScheduleBase {
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildConfigurationForm($form, $form_state);
 
+    $form['#attached']['library'][] = 'commerce_recurring/admin';
     $form['interval'] = [
       '#type' => 'container',
+      '#attributes' => [
+        'class' => ['interval'],
+      ],
+      '#open' => TRUE,
     ];
     $form['interval']['number'] = [
       '#type' => 'number',
-      '#title' => $this->t('Number'),
+      '#title' => $this->t('Interval'),
       '#default_value' => $this->configuration['interval']['number'],
       '#min' => 1,
       '#required' => TRUE,
@@ -41,6 +46,7 @@ abstract class IntervalBase extends BillingScheduleBase {
     $form['interval']['unit'] = [
       '#type' => 'select',
       '#title' => $this->t('Unit'),
+      '#title_display' => 'invisible',
       '#options' => [
         'hour' => $this->t('Hour'),
         'day' => $this->t('Day'),
