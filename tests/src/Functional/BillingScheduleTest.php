@@ -1,64 +1,132 @@
 <?php
 
-namespace Drupal\Tests\commerce_recurring\Functional;
+namespace Drupal\Tests\advancedqueue\Functional;
 
+use Drupal\advancedqueue\Entity\Queue;
+use Drupal\advancedqueue\Entity\QueueInterface;
 use Drupal\Tests\BrowserTestBase;
 
 /**
- * Tests billing schedules.
+ * Tests the queue UI.
+ *
+ * @group advancedqueue
  */
-class BillingScheduleTest extends BrowserTestBase {
+class QueueTest extends BrowserTestBase {
+
+  /**
+   * A test user with administrative privileges.
+   *
+   * @var \Drupal\user\UserInterface
+   */
+  protected $adminUser;
 
   /**
    * {@inheritdoc}
    */
   public static $modules = [
-    'commerce_recurring',
+    'advancedqueue',
     'block',
-    'commerce_product',
+    'views',
+    'system',
   ];
 
-  public function testCrudUiTest() {
-    $admin_user = $this->drupalCreateUser(['administer commerce_billing_schedule']);
-    $this->drupalLogin($admin_user);
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp() {
+    parent::setUp();
+
+    $this->placeBlock('local_tasks_block');
     $this->placeBlock('local_actions_block');
+    $this->placeBlock('page_title_block');
 
-    $this->drupalGet('admin/commerce/config/billing-schedule');
-    $this->assertSession()->statusCodeEquals(200);
+    $this->adminUser = $this->drupalCreateUser(['administer advancedqueue']);
+    $this->drupalLogin($this->adminUser);
+  }
 
-    $this->clickLink('Add billing schedule');
+  /**
+   * Tests creating a queue.
+   */
+  public function testQueueCreation() {
+    $this->drupalGet('admin/config/system/queues');
+    $this->getSession()->getPage()->clickLink('Add queue');
+    $this->assertSession()->addressEquals('admin/config/system/queues/add');
+
+    $values = [
+      'label' => 'Test',
+      'configuration[database][lease_time]' => '200',
+      'processor' => QueueInterface::PROCESSOR_DAEMON,
+      'processing_time' => '100',
+      // Setting the 'id' can fail if focus switches to another field.
+      // This is a bug in the machine name JS that can be reproduced manually.
+      'id' => 'test',
+    ];
+    $this->submitForm($values, 'Save');
+    $this->assertSession()->addressEquals('admin/config/system/queues');
+    $this->assertSession()->responseContains('Test');
+
+    $queue = Queue::load('test');
+    $this->assertEquals('test', $queue->id());
+    $this->assertEquals('Test', $queue->label());
+    $this->assertEquals('database', $queue->getBackendId());
+    $this->assertEquals(['lease_time' => 200], $queue->getBackendConfiguration());
+    $this->assertEquals($queue->getBackendConfiguration(), $queue->getBackend()->getConfiguration());
+    $this->assertEquals(QueueInterface::PROCESSOR_DAEMON, $queue->getProcessor());
+    $this->assertEquals(100, $queue->getProcessingTime());
+    $this->assertFalse($queue->isLocked());
+  }
+
+  /**
+   * Tests editing a queue.
+   */
+  public function testQueueEditing() {
+    $queue = Queue::create([
+      'id' => 'test',
+      'label' => 'Test',
+      'backend' => 'database',
+      'processor' => QueueInterface::PROCESSOR_DAEMON,
+      'processing_time' => 100,
+    ]);
+    $queue->save();
+
+    $this->drupalGet('admin/config/system/queues/manage/' . $queue->id());
     $this->submitForm([
-      'label' => 'My admin label',
-      'id' => 'test_id',
-      'displayLabel' => 'My display label',
-      'plugin' => 'test_plugin',
+      'label' => 'Test (Modified)',
+      'configuration[database][lease_time]' => '202',
+      'processor' => QueueInterface::PROCESSOR_CRON,
+      'processing_time' => '120',
     ], 'Save');
-    $this->clickLink('Edit');
-    $this->submitForm([
-      'configuration[test_plugin][key]' => 'value1',
-    ], 'Save');
-    $this->assertSession()->addressEquals('admin/commerce/config/billing-schedule');
-    $this->assertSession()->pageTextContains('Saved the My admin label billing schedule.');
 
-    // 2. Ensure the entity is listed
-    $this->assertSession()->pageTextContains('My admin label');
+    \Drupal::entityTypeManager()->getStorage('advancedqueue_queue')->resetCache();
+    $queue = Queue::load('test');
+    $this->assertEquals('test', $queue->id());
+    $this->assertEquals('Test (Modified)', $queue->label());
+    $this->assertEquals('database', $queue->getBackendId());
+    $this->assertEquals(['lease_time' => 202], $queue->getBackendConfiguration());
+    $this->assertEquals($queue->getBackendConfiguration(), $queue->getBackend()->getConfiguration());
+    $this->assertEquals(QueueInterface::PROCESSOR_CRON, $queue->getProcessor());
+    $this->assertEquals(120, $queue->getProcessingTime());
+    $this->assertFalse($queue->isLocked());
+  }
 
-    // 3. Edit the entity
-    $this->clickLink('Edit');
-    $this->assertSession()->fieldValueEquals('configuration[test_plugin][key]', 'value1');
-    $this->submitForm([
-      'configuration[test_plugin][key]' => 'value2',
-    ], 'Save');
-    $this->assertSession()->addressEquals('admin/commerce/config/billing-schedule');
-    $this->clickLink('Edit');
-    $this->assertSession()->fieldValueEquals('configuration[test_plugin][key]', 'value2');
-    $this->submitForm([], 'Save');
-
-    // 4. Delete the entity
-    $this->clickLink('Delete');
+  /**
+   * Tests deleting a queue.
+   */
+  public function testQueueDeletion() {
+    $queue = Queue::create([
+      'id' => 'test',
+      'label' => 'Test',
+      'backend' => 'database',
+      'processor' => QueueInterface::PROCESSOR_DAEMON,
+      'processing_time' => 100,
+    ]);
+    $queue->save();
+    $this->drupalGet('admin/config/system/queues/manage/' . $queue->id() . '/delete');
     $this->submitForm([], 'Delete');
+    $this->assertSession()->addressEquals('admin/config/system/queues');
 
-    $this->assertSession()->pageTextNotContains('test_id');
+    $queue_exists = (bool) Queue::load('test');
+    $this->assertEmpty($queue_exists, 'The queue has been deleted from the database.');
   }
 
 }

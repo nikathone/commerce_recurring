@@ -2,6 +2,7 @@
 
 namespace Drupal\commerce_recurring\Plugin\Commerce\SubscriptionType;
 
+use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\entity\BundlePlugin\BundlePluginInterface;
 use Drupal\commerce_order\Entity\OrderInterface;
 use Drupal\commerce_order\Entity\OrderItemInterface;
@@ -14,8 +15,11 @@ use Drupal\commerce_recurring\Entity\SubscriptionInterface;
  * Subscription types act as subscription bundles, providing additional fields.
  * They also contain billing logic such as calculating charges and manipulating
  * recurring orders.
+ *
+ * @todo PluginFormInterface is implemented as a workaround for #2886812,
+ *       remove it once Commerce 8.x-2.2 is released.
  */
-interface SubscriptionTypeInterface extends BundlePluginInterface {
+interface SubscriptionTypeInterface extends BundlePluginInterface, PluginFormInterface {
 
   /**
    * Gets the subscription type label.
