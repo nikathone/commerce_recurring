@@ -26,19 +26,27 @@ commerce_recurring.commerce_billing_schedule.plugin.*:
 commerce_recurring.commerce_billing_schedule.plugin.fixed:
   type: mapping
   mapping:
-    number:
-      type: integer
-      label: Number
-    unit:
-      type: string
-      label: Unit
+    interval:
+      type: mapping
+      label: 'Interval'
+      mapping:
+        number:
+          type: integer
+          label: Number
+        unit:
+          type: string
+          label: Unit
 
 commerce_recurring.commerce_billing_schedule.plugin.rolling:
   type: mapping
   mapping:
-    number:
-      type: integer
-      label: Number
-    unit:
-      type: string
-      label: Unit
+    interval:
+      type: mapping
+      label: 'Interval'
+      mapping:
+        number:
+          type: integer
+          label: Number
+        unit:
+          type: string
+          label: Unit

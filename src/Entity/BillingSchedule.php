@@ -48,10 +48,10 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  *     "configuration",
  *   },
  *   links = {
- *     "add-form" = "/admin/commerce/config/billing-schedule/add",
- *     "edit-form" = "/admin/commerce/config/billing-schedule/manage/{commerce_billing_schedule}",
- *     "delete-form" = "/admin/commerce/config/billing-schedule/manage/{commerce_billing_schedule}/delete",
- *     "collection" =  "/admin/commerce/config/billing-schedule"
+ *     "add-form" = "/admin/commerce/config/billing-schedules/add",
+ *     "edit-form" = "/admin/commerce/config/billing-schedules/manage/{commerce_billing_schedule}",
+ *     "delete-form" = "/admin/commerce/config/billing-schedules/manage/{commerce_billing_schedule}/delete",
+ *     "collection" =  "/admin/commerce/config/billing-schedules"
  *   }
  * )
  */

@@ -43,8 +43,10 @@ class BillingScheduleTest extends KernelTestBase {
       'billingType' => BillingScheduleInterface::BILLING_TYPE_POSTPAID,
       'plugin' => 'rolling',
       'configuration' => [
-        'number' => '1',
-        'unit' => 'month',
+        'interval' => [
+          'number' => '1',
+          'unit' => 'month',
+        ],
       ],
     ])->save();
 
@@ -55,10 +57,24 @@ class BillingScheduleTest extends KernelTestBase {
     $this->assertEquals(BillingScheduleInterface::BILLING_TYPE_POSTPAID, $billing_schedule->getBillingType());
 
     $this->assertEquals('rolling', $billing_schedule->getPluginId());
-    $this->assertEquals(['number' => '1', 'unit' => 'month'], $billing_schedule->getPluginConfiguration());
-    $billing_schedule->setPluginConfiguration(['number' => '2', 'unit' => 'year']);
-    $this->assertEquals(['number' => '2', 'unit' => 'year'], $billing_schedule->getPluginConfiguration());
-
+    $this->assertEquals([
+      'interval' => [
+        'number' => '1',
+        'unit' => 'month',
+      ],
+    ], $billing_schedule->getPluginConfiguration());
+    $billing_schedule->setPluginConfiguration([
+      'interval' => [
+        'number' => '2',
+        'unit' => 'year',
+      ],
+    ]);
+    $this->assertEquals([
+      'interval' => [
+        'number' => '2',
+        'unit' => 'year',
+      ],
+    ], $billing_schedule->getPluginConfiguration());
     $plugin = $billing_schedule->getPlugin();
     $this->assertInstanceOf(Rolling::class, $plugin);
     $this->assertEquals($billing_schedule->getPluginId(), $plugin->getPluginId());

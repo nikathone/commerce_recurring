@@ -98,8 +98,10 @@ class RecurringKernelTestBase extends CommerceKernelTestBase {
       'billingType' => BillingSchedule::BILLING_TYPE_POSTPAID,
       'plugin' => 'fixed',
       'configuration' => [
-        'number' => '1',
-        'unit' => 'hour',
+        'interval' => [
+          'number' => '1',
+          'unit' => 'hour',
+        ],
       ],
     ]);
     $billing_schedule->save();

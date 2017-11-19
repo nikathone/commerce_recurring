@@ -29,8 +29,10 @@ class RollingTest extends KernelTestBase {
    */
   public function testGenerate() {
     $plugin = new Rolling([
-      'number' => '2',
-      'unit' => 'hour',
+      'interval' => [
+        'number' => '2',
+        'unit' => 'hour',
+      ],
     ], '', []);
     $start_date = new DrupalDateTime('2017-03-16 10:22:30');
     $billing_period = $plugin->generateFirstBillingPeriod($start_date);
@@ -41,8 +43,10 @@ class RollingTest extends KernelTestBase {
     $this->assertEquals(new DrupalDateTime('2017-03-16 14:22:30'), $next_billing_period->getEndDate());
 
     $plugin = new Rolling([
-      'number' => '1',
-      'unit' => 'month',
+      'interval' => [
+        'number' => '1',
+        'unit' => 'month',
+      ],
     ], '', []);
     $start_date = new DrupalDateTime('2017-01-30 10:22:30');
     $billing_period = $plugin->generateFirstBillingPeriod($start_date);
@@ -53,8 +57,10 @@ class RollingTest extends KernelTestBase {
     $this->assertEquals(new DrupalDateTime('2017-03-30 10:22:30'), $next_billing_period->getEndDate());
 
     $plugin = new Rolling([
-      'number' => '1',
-      'unit' => 'year',
+      'interval' => [
+        'number' => '1',
+        'unit' => 'year',
+      ],
     ], '', []);
     $start_date = new DrupalDateTime('2017-03-16 10:22:30');
     $billing_period = $plugin->generateFirstBillingPeriod($start_date);

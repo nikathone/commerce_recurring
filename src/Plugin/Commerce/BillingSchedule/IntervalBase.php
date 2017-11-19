@@ -15,8 +15,10 @@ abstract class IntervalBase extends BillingScheduleBase {
    */
   public function defaultConfiguration() {
     return [
-      'number' => 1,
-      'unit' => 'month',
+      'interval' => [
+        'number' => 1,
+        'unit' => 'month',
+      ],
     ] + parent::defaultConfiguration();
   }
 
@@ -26,12 +28,17 @@ abstract class IntervalBase extends BillingScheduleBase {
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildConfigurationForm($form, $form_state);
 
-    $form['number'] = [
+    $form['interval'] = [
+      '#type' => 'container',
+    ];
+    $form['interval']['number'] = [
       '#type' => 'number',
       '#title' => $this->t('Number'),
-      '#default_value' => $this->configuration['number'],
+      '#default_value' => $this->configuration['interval']['number'],
+      '#min' => 1,
+      '#required' => TRUE,
     ];
-    $form['unit'] = [
+    $form['interval']['unit'] = [
       '#type' => 'select',
       '#title' => $this->t('Unit'),
       '#options' => [
@@ -41,7 +48,8 @@ abstract class IntervalBase extends BillingScheduleBase {
         'month' => $this->t('Month'),
         'year' => $this->t('Year'),
       ],
-      '#default_value' => $this->configuration['unit'],
+      '#default_value' => $this->configuration['interval']['unit'],
+      '#required' => TRUE,
     ];
 
     return $form;
@@ -57,8 +65,7 @@ abstract class IntervalBase extends BillingScheduleBase {
       $values = $form_state->getValue($form['#parents']);
 
       $this->configuration = [];
-      $this->configuration['number'] = $values['number'];
-      $this->configuration['unit'] = $values['unit'];
+      $this->configuration['interval'] = $values['interval'];
     }
   }
 
@@ -69,7 +76,7 @@ abstract class IntervalBase extends BillingScheduleBase {
    *   The interval.
    */
   protected function getInterval() {
-    return new Interval($this->configuration['number'], $this->configuration['unit']);
+    return new Interval($this->configuration['interval']['number'], $this->configuration['interval']['unit']);
   }
 
 }
