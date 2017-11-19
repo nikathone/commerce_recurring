@@ -6,6 +6,7 @@
  */
 
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\commerce\PurchasableEntityInterface;
 
 /**
@@ -27,4 +28,19 @@ function commerce_recurring_commerce_entity_trait_info_alter(array &$definitions
  */
 function commerce_recurring_cron() {
   \Drupal::service('commerce_recurring.cron')->run();
+}
+
+/**
+ * Implements hook_field_widget_form_alter().
+ */
+function commerce_recurring_field_widget_form_alter(&$element, FormStateInterface $form_state, $context) {
+  $field_definition = $context['items']->getFieldDefinition();
+  $field_name = $field_definition->getName();
+  $widget_name = $context['widget']->getPluginId();
+  if ($field_name == 'subscription_type' && $widget_name == 'commerce_plugin_select') {
+    // The standalone subscription type is used for subscriptions not backed
+    // by a purchasable entity, so it doesn't make sense to offer it on a
+    // purchasable entity form (such as the product variation one).
+    unset($element['target_plugin_id']['#options']['standalone']);
+  }
 }
