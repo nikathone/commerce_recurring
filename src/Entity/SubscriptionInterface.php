@@ -225,6 +225,16 @@ interface SubscriptionInterface extends ContentEntityInterface {
   public function getState();
 
   /**
+   * Sets the subscription state.
+   *
+   * @param string $state_id
+   *   The new state ID.
+   *
+   * @return $this
+   */
+  public function setState($state_id);
+
+  /**
    * Gets the recurring order IDs.
    *
    * @return int[]

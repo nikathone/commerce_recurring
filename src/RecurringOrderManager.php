@@ -157,6 +157,24 @@ class RecurringOrderManager implements RecurringOrderManagerInterface {
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public function collectSubscriptions(OrderInterface $order) {
+    $subscriptions = [];
+    foreach ($order->getItems() as $order_item) {
+      if ($order_item->get('subscription')->isEmpty()) {
+        // There should never be a recurring order item without a subscription.
+        continue;
+      }
+      /** @var \Drupal\commerce_recurring\Entity\SubscriptionInterface $subscription */
+      $subscription = $order_item->get('subscription')->entity;
+      $subscriptions[$subscription->id()] = $subscription;
+    }
+
+    return $subscriptions;
+  }
+
+  /**
    * Applies subscription charges to the given recurring order.
    *
    * @param \Drupal\commerce_order\Entity\OrderInterface $order
@@ -235,30 +253,6 @@ class RecurringOrderManager implements RecurringOrderManagerInterface {
     $payment_method = reset($payment_methods);
 
     return $payment_method ?: NULL;
-  }
-
-  /**
-   * Collects all subscriptions that belong to an order.
-   *
-   * @param \Drupal\commerce_order\Entity\OrderInterface $order
-   *   The order.
-   *
-   * @return \Drupal\commerce_recurring\Entity\SubscriptionInterface[]
-   *   The subscriptions.
-   */
-  protected function collectSubscriptions(OrderInterface $order) {
-    $subscriptions = [];
-    foreach ($order->getItems() as $order_item) {
-      if ($order_item->get('subscription')->isEmpty()) {
-        // There should never be a recurring order item without a subscription.
-        continue;
-      }
-      /** @var \Drupal\commerce_recurring\Entity\SubscriptionInterface $subscription */
-      $subscription = $order_item->get('subscription')->entity;
-      $subscriptions[$subscription->id()] = $subscription;
-    }
-
-    return $subscriptions;
   }
 
   /**

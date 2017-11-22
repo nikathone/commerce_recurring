@@ -59,4 +59,15 @@ interface RecurringOrderManagerInterface {
    */
   public function renewOrder(OrderInterface $order);
 
+  /**
+   * Collects all subscriptions that belong to an order.
+   *
+   * @param \Drupal\commerce_order\Entity\OrderInterface $order
+   *   The order.
+   *
+   * @return \Drupal\commerce_recurring\Entity\SubscriptionInterface[]
+   *   The subscriptions.
+   */
+  public function collectSubscriptions(OrderInterface $order);
+
 }

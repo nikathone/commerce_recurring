@@ -43,6 +43,7 @@ class SubscriptionTest extends RecurringKernelTestBase {
    * @covers ::getUnitPrice
    * @covers ::setUnitPrice
    * @covers ::getState
+   * @covers ::setState
    * @covers ::getOrderIds
    * @covers ::getOrders
    * @covers ::setOrders
@@ -104,6 +105,8 @@ class SubscriptionTest extends RecurringKernelTestBase {
     $this->assertEquals(new Price('3', 'USD'), $subscription->getUnitPrice());
 
     $this->assertEquals('pending', $subscription->getState()->value);
+    $subscription->setState('expired');
+    $this->assertEquals('expired', $subscription->getState()->value);
 
     /** @var \Drupal\commerce_order\Entity\OrderInterface $order */
     $order = Order::create([

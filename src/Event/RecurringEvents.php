@@ -5,6 +5,18 @@ namespace Drupal\commerce_recurring\Event;
 final class RecurringEvents {
 
   /**
+   * Name of the event fired when a payment is declined.
+   *
+   * Subscribers can respond to this email to send dunning emails or modify
+   * the recurring order before it is saved.
+   *
+   * @Event
+   *
+   * @see \Drupal\commerce_recurring\Plugin\AdvancedQueue\JobType\RecurringOrderClose
+   */
+  const PAYMENT_DECLINED = 'commerce_recurring.payment_declined';
+
+  /**
    * Name of the event fired after loading a subscription.
    *
    * @Event

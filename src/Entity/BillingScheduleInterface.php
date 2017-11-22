@@ -61,6 +61,51 @@ interface BillingScheduleInterface extends ConfigEntityInterface, EntityWithPlug
   public function setBillingType($billing_type);
 
   /**
+   * Gets the retry schedule.
+   *
+   * Controls the dunning process that starts after a declined payment.
+   * For example, [1, 3, 5] means that a recurring order's payment will be
+   * retried 3 times, with 1, 3, and 5 days between retries.
+   *
+   * @return array
+   *   The retry schedule.
+   */
+  public function getRetrySchedule();
+
+  /**
+   * Sets the retry schedule.
+   *
+   * @param array $schedule
+   *   The retry schedule.
+   *
+   * @return $this
+   */
+  public function setRetrySchedule(array $schedule);
+
+  /**
+   * Gets the unpaid subscription state.
+   *
+   * This is the state that the subscription will transition to after the end
+   * of the dunning cycle. Common values:
+   * - active (indicating that the subscription should stay active)
+   * - canceled (indicating that the subscription should be canceled).
+   *
+   * @return string
+   *   The subscription state.
+   */
+  public function getUnpaidSubscriptionState();
+
+  /**
+   * Sets the unpaid subscription state.
+   *
+   * @param string $state
+   *   The subscription state.
+   *
+   * @return $this
+   */
+  public function setUnpaidSubscriptionState($state);
+
+  /**
    * Gets the billing schedule plugin ID.
    *
    * @return string

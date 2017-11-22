@@ -1,10 +1,11 @@
 <?php
 
-namespace Drupal\Tests\commerce_recurring\Functional;
+namespace Drupal\Tests\commerce_recurring\FunctionalJavascript;
 
 use Drupal\commerce_recurring\Entity\BillingSchedule;
 use Drupal\commerce_recurring\Entity\BillingScheduleInterface;
 use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
+use Drupal\Tests\commerce\FunctionalJavascript\JavascriptTestTrait;
 
 /**
  * Tests the billing schedule UI.
@@ -12,6 +13,8 @@ use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
  * @group commerce_recurring
  */
 class BillingScheduleTest extends CommerceBrowserTestBase {
+
+  use JavascriptTestTrait;
 
   /**
    * {@inheritdoc}
@@ -42,6 +45,10 @@ class BillingScheduleTest extends CommerceBrowserTestBase {
       'label' => 'Test',
       'displayLabel' => 'Awesome test',
       'billingType' => BillingScheduleInterface::BILLING_TYPE_POSTPAID,
+      'dunning[retry][0]' => '1',
+      'dunning[retry][1]' => '2',
+      'dunning[retry][2]' => '3',
+      'dunning[unpaid_subscription_state]' => 'canceled',
       'plugin' => 'fixed',
       'configuration[fixed][interval][number]' => '2',
       'configuration[fixed][interval][unit]' => 'month',
@@ -58,6 +65,8 @@ class BillingScheduleTest extends CommerceBrowserTestBase {
     $this->assertEquals('Test', $billing_schedule->label());
     $this->assertEquals('Awesome test', $billing_schedule->getDisplayLabel());
     $this->assertEquals(BillingScheduleInterface::BILLING_TYPE_POSTPAID, $billing_schedule->getBillingType());
+    $this->assertEquals([1, 2, 3], $billing_schedule->getRetrySchedule());
+    $this->assertEquals('canceled', $billing_schedule->getUnpaidSubscriptionState());
     $this->assertEquals('fixed', $billing_schedule->getPluginId());
     $this->assertEquals([
       'interval' => [
@@ -88,10 +97,15 @@ class BillingScheduleTest extends CommerceBrowserTestBase {
     $billing_schedule->save();
 
     $this->drupalGet('admin/commerce/config/billing-schedules/manage/' . $billing_schedule->id());
+    $this->getSession()->getPage()->selectFieldOption('dunning[num_retries]', '2');
+    $this->waitForAjaxToFinish();
     $this->submitForm([
       'label' => 'Test (Modified)',
       'displayLabel' => 'Awesome test (Modified)',
       'billingType' => BillingScheduleInterface::BILLING_TYPE_PREPAID,
+      'dunning[retry][0]' => '6',
+      'dunning[retry][1]' => '7',
+      'dunning[unpaid_subscription_state]' => 'active',
       'plugin' => 'fixed',
       'configuration[fixed][interval][number]' => '1',
       'configuration[fixed][interval][unit]' => 'year',
@@ -103,6 +117,8 @@ class BillingScheduleTest extends CommerceBrowserTestBase {
     $this->assertEquals('Test (Modified)', $billing_schedule->label());
     $this->assertEquals('Awesome test (Modified)', $billing_schedule->getDisplayLabel());
     $this->assertEquals(BillingScheduleInterface::BILLING_TYPE_PREPAID, $billing_schedule->getBillingType());
+    $this->assertEquals([6, 7], $billing_schedule->getRetrySchedule());
+    $this->assertEquals('active', $billing_schedule->getUnpaidSubscriptionState());
     $this->assertEquals('fixed', $billing_schedule->getPluginId());
     $this->assertEquals([
       'interval' => [

@@ -43,9 +43,11 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  *     "label",
  *     "displayLabel",
  *     "billingType",
- *     "status",
+ *     "retrySchedule",
+ *     "unpaidSubscriptionState",
  *     "plugin",
  *     "configuration",
+ *     "status",
  *   },
  *   links = {
  *     "add-form" = "/admin/commerce/config/billing-schedules/add",
@@ -86,6 +88,20 @@ class BillingSchedule extends ConfigEntityBase implements BillingScheduleInterfa
    * @var string
    */
   protected $billingType = self::BILLING_TYPE_PREPAID;
+
+  /**
+   * The retry schedule.
+   *
+   * @var array
+   */
+  protected $retrySchedule = [1, 3, 5];
+
+  /**
+   * The unpaid subscription state.
+   *
+   * @var string
+   */
+  protected $unpaidSubscriptionState = 'canceled';
 
   /**
    * The plugin ID.
@@ -139,6 +155,35 @@ class BillingSchedule extends ConfigEntityBase implements BillingScheduleInterfa
     }
     $this->billingType = $billing_type;
 
+    return $this;
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public function getRetrySchedule() {
+    return $this->retrySchedule;
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public function setRetrySchedule(array $schedule) {
+    $this->retrySchedule = $schedule;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getUnpaidSubscriptionState() {
+    return $this->unpaidSubscriptionState;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUnpaidSubscriptionState($state) {
+    $this->unpaidSubscriptionState = $state;
     return $this;
   }
 

@@ -5,11 +5,15 @@ namespace Drupal\commerce_recurring\Plugin\AdvancedQueue\JobType;
 use Drupal\advancedqueue\Job;
 use Drupal\advancedqueue\JobResult;
 use Drupal\advancedqueue\Plugin\AdvancedQueue\JobType\JobTypeBase;
+use Drupal\commerce_order\Entity\OrderInterface;
 use Drupal\commerce_payment\Exception\DeclineException;
+use Drupal\commerce_recurring\Event\PaymentDeclinedEvent;
+use Drupal\commerce_recurring\Event\RecurringEvents;
 use Drupal\commerce_recurring\RecurringOrderManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Provides the job type for closing recurring orders.
@@ -29,6 +33,13 @@ class RecurringOrderClose extends JobTypeBase implements ContainerFactoryPluginI
   protected $entityTypeManager;
 
   /**
+   * The event dispatcher.
+   *
+   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface
+   */
+  protected $eventDispatcher;
+
+  /**
    * The recurring order manager.
    *
    * @var \Drupal\commerce_recurring\RecurringOrderManagerInterface
@@ -46,13 +57,16 @@ class RecurringOrderClose extends JobTypeBase implements ContainerFactoryPluginI
    *   The plugin implementation definition.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
+   *   The event dispatcher.
    * @param \Drupal\commerce_recurring\RecurringOrderManagerInterface $recurring_order_manager
    *   The recurring order manager.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entity_type_manager, RecurringOrderManagerInterface $recurring_order_manager) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entity_type_manager, EventDispatcherInterface $event_dispatcher, RecurringOrderManagerInterface $recurring_order_manager) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
     $this->entityTypeManager = $entity_type_manager;
+    $this->eventDispatcher = $event_dispatcher;
     $this->recurringOrderManager = $recurring_order_manager;
   }
 
@@ -65,6 +79,7 @@ class RecurringOrderClose extends JobTypeBase implements ContainerFactoryPluginI
       $plugin_id,
       $plugin_definition,
       $container->get('entity_type.manager'),
+      $container->get('event_dispatcher'),
       $container->get('commerce_recurring.order_manager')
     );
   }
@@ -80,14 +95,58 @@ class RecurringOrderClose extends JobTypeBase implements ContainerFactoryPluginI
     if (!$order) {
       return JobResult::failure('Order not found.');
     }
+
     try {
       $this->recurringOrderManager->closeOrder($order);
     }
-    catch (DeclineException $e) {
-      // @todo Schedule a retry, do dunning, etc.
+    catch (DeclineException $exception) {
+      return $this->handleDecline($order, $exception, $job->getNumRetries());
     }
 
     return JobResult::success();
+  }
+
+  /**
+   * Handles a declined order payment.
+   *
+   * @param \Drupal\commerce_order\Entity\OrderInterface $order
+   *   The order.
+   * @param \Drupal\commerce_payment\Exception\DeclineException $exception
+   *   The decline exception.
+   * @param int $num_retries
+   *   The number of times the job was retried so far.
+   *
+   * @return \Drupal\advancedqueue\JobResult
+   *   The job result.
+   */
+  protected function handleDecline(OrderInterface $order, DeclineException $exception, $num_retries) {
+    /** @var \Drupal\commerce_recurring\Entity\BillingScheduleInterface $billing_schedule */
+    $billing_schedule = $order->get('billing_schedule')->entity;
+    $schedule = $billing_schedule->getRetrySchedule();
+    $max_retries = count($schedule);
+    if ($num_retries < $max_retries) {
+      $retry_days = $schedule[$num_retries];
+      $result = JobResult::failure($exception->getMessage(), $max_retries, 86400 * $retry_days);
+    }
+    else {
+      $retry_days = 0;
+      $result = JobResult::success('Dunning complete, recurring order not paid.');
+      // Cancel the subscriptions if requested.
+      if ($billing_schedule->getUnpaidSubscriptionState() != 'active') {
+        $subscriptions = $this->recurringOrderManager->collectSubscriptions($order);
+        foreach ($subscriptions as $subscription) {
+          if ($subscription->getState()->value == 'active') {
+            $subscription->setState($billing_schedule->getUnpaidSubscriptionState());
+            $subscription->save();
+          }
+        }
+      }
+    }
+    // Subscribers can choose to send a dunning email.
+    $event = new PaymentDeclinedEvent($order, $retry_days, $num_retries, $max_retries);
+    $this->eventDispatcher->dispatch(RecurringEvents::PAYMENT_DECLINED, $event);
+
+    return $result;
   }
 
 }

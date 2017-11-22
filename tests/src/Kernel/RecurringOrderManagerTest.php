@@ -4,7 +4,6 @@ namespace Drupal\Tests\commerce_recurring\Kernel;
 
 use Drupal\commerce_payment\Exception\HardDeclineException;
 use Drupal\commerce_price\Price;
-use Drupal\commerce_recurring\BillingPeriod;
 use Drupal\commerce_recurring\Entity\Subscription;
 use Drupal\Core\Datetime\DrupalDateTime;
 
@@ -55,6 +54,7 @@ class RecurringOrderManagerTest extends RecurringKernelTestBase {
 
   /**
    * @covers ::ensureOrder
+   * @covers ::collectSubscriptions
    */
   public function testEnsureOrder() {
     $order = $this->recurringOrderManager->ensureOrder($this->subscription);

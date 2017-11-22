@@ -78,9 +78,10 @@ abstract class SubscriptionTypeBase extends PluginBase implements SubscriptionTy
    * Gets the plugin configuration.
    *
    * Implemented as a workaround for #2886812, remove once Commerce 8.x-2.2
-   * is released
+   * is released.
    *
    * @return array
+   *   The plugin configuration.
    */
   public function getConfiguration() {
     return [];

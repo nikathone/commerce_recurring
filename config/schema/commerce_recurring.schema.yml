@@ -13,7 +13,16 @@ commerce_recurring.commerce_billing_schedule.*:
       label: 'Display label'
     billingType:
       type: string
-      label: Billing type
+      label: 'Billing type'
+    retrySchedule:
+      type: sequence
+      label: 'Retry schedule'
+      sequence:
+        type: integer
+        label: 'Retry days'
+    unpaidSubscriptionState:
+      type: string
+      label: 'Unpaid subscription state'
     plugin:
       type: string
       label: 'Plugin'

@@ -245,6 +245,14 @@ class Subscription extends ContentEntityBase implements SubscriptionInterface {
   /**
    * {@inheritdoc}
    */
+  public function setState($state_id) {
+    $this->set('state', $state_id);
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getOrderIds() {
     $order_ids = [];
     foreach ($this->get('orders') as $field_item) {
